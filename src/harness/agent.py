@@ -11,7 +11,7 @@ Provider = Literal["claude", "gemini", "openai"]
 # Default models for each provider (can be overridden via model parameter)
 DEFAULT_MODELS = {
     "claude": "claude-sonnet-4-5-20250929",
-    "gemini": "gemini-3.0-pro",
+    "gemini": "gemini-3-pro-preview",
     "openai": "gpt-5",
 }
 
