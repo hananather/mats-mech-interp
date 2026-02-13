@@ -1,14 +1,35 @@
-# Claude Code
-CLAUDE.md
-
-__pycache__
-notebooks
-*.egg-info
+# Credentials
 .env
 .secrets/
-*.log
-old_notebooks
-.sandbox_states/
+
+# Python
+__pycache__/
+*.egg-info/
 .venv/
-outputs/
+
+# OS
+.DS_Store
+
+# Seer framework (cloned separately, not part of this repo)
+src/
+scribe/
+modal_sandbox_mcp/
+docs/
+example_runs/
+tests/
+notebooks/
+scripts/
+old_notebooks/
+.sandbox_states/
 workspace/
+mkdocs.yml
+.github/
+
+# Raw experiment outputs (session notebooks are in session-notebooks/)
+outputs/
+
+# Logs
+*.log
+
+# Claude Code
+CLAUDE.md
