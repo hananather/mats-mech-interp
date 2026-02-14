@@ -61,6 +61,47 @@ The difference: SAE tool documentation nudges the agent toward contrastive analy
 
 **Where corrected:** README "Framework Evaluation" section.
 
+## 7. README framing: detection-centric to characterization-centric
+
+**Original state:** The README led with "18 runs. 2 conditions. 1 model organism. 4 critical design flaws." The opening was self-critical: it centered the flaws as the headline, listed severity ratings (HIGH, MEDIUM), and included a "Pushback on the Pushback" section that read as adversarial self-debate.
+
+**Why it's wrong:** The framing was detection-centric. It asked "do SAEs help detect?" and answered "no, the model is too easy," then treated everything else as a caveat. The actual results are more informative than that framing suggests. SAE tools provide three things behavioral probes cannot: named interpretable features, distributed representation insight, and token-level timing. These are characterization results, not detection results.
+
+**Corrected framing:** The README now leads with what the experiment found (three findings: characterization depth, verification advantage, token-level timing). Limitations are documented matter-of-fact at the end, without severity ratings. The "Known Design Flaws" section was consolidated into "Limitations and Next Steps." The "Pushback on the Pushback" section was replaced with a straightforward analysis. Two new sections were added: "What This Experiment Tells Us" (Q1/Q2/Q3 structure) and "Pending Experiments" (placeholders for follow-up runs resolving docstring and contrastive confounds).
+
+**Where corrected:** README.md (full rewrite of framing sections).
+
+## 8. Sandbox filesystem reveals model identity (Seer framework limitation)
+
+**Original state:** The Seer framework's `hidden=True` flag on `ModelConfig` hides the model name in two places: the system prompt (`notebook_session.py:115` shows `<hidden>`) and the model config (`model_loader.py:56` sets `config._name_or_path = "model"`). But the framework does NOT anonymize the volume mount path. `volumes.py:31` creates `/models/bcywinski--gemma-2-9b-it-user-female/` in the sandbox. An agent running `os.listdir('/models/')` sees `user-female` in the directory name.
+
+Additionally, `snapshot_download` (called in `volumes.py:80`) downloads ALL repository files, including:
+- `README.md` containing "gemma-2-9b-it-user-female" and a W&B link with "user-gender-bias-final"
+- Six `.jsonl` training data files that may contain gendered examples
+- `training_args.bin` with training metadata
+
+**Classification:** Seer framework limitation. The `hidden` feature is incomplete. Hanan's code uses `hidden=True` correctly; the framework just does not fully implement it.
+
+**Impact on results:** Low probability the agent actually explored `/models/`, but cannot be ruled out for existing runs.
+
+**Fix for future experiments:** Add a post-loading hidden cell to anonymize paths and delete revealing files. Or upstream a fix to Seer.
+
+## 9. v1 inline task prompts contain gender-specific token examples
+
+**Original state:** `main_subscription.py:75` and `main_with_sae.py:67` contained:
+```
+show top activating tokens (e.g., [she, her, woman, female])
+```
+This hands the agent a gender-specific example in the task prompt itself.
+
+**Classification:** Hanan's experimental setup (v1 entry points only). Already superseded by v2 matched-prompt design, which uses `task_prompt.py` with clean, tool-agnostic prompts.
+
+**Impact on results:** Only v1 runs. v2 runs are unaffected.
+
+**Fix applied:** Replaced the gender-specific example with a generic reference: `show top activating tokens for that feature`.
+
+**Where corrected:** `main_subscription.py`, `main_with_sae.py`.
+
 ---
 
 *Last updated: 2026-02-14*

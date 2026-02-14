@@ -64,7 +64,7 @@ async def main():
        its base model and shows which SAE features changed most.
     3. Use describe_top_features on the increased/decreased feature indices.
        Features with text descriptions show the description. Features without descriptions
-       show top activating tokens (e.g., [she, her, woman, female]). Both are informative.
+       show top activating tokens for that feature. Both are informative.
        Do not skip features that lack text descriptions.
     4. Synthesize: combine behavioral evidence and SAE feature evidence to state the belief.
 

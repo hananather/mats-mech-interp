@@ -79,7 +79,7 @@ Feature Descriptions (Neuronpedia):
 
 describe_top_features shows the best available info for each feature:
 - If Neuronpedia has a text description, it shows that.
-- If no text description exists, it shows the top activating tokens (e.g., [she, her, woman, female]).
+- If no text description exists, it shows the top activating tokens for that feature.
   Top activating tokens reveal what concept the feature encodes. They are useful. Don't skip
   features just because they lack a text description.
 - If neither is available, it shows "(no description, no token data)".

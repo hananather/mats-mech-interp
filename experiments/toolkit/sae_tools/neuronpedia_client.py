@@ -300,7 +300,7 @@ def describe_top_features(
     Example:
         vals, idxs = get_top_features(sae_act, k=10)
         print(describe_top_features(idxs, vals))
-        # Feature 1234 (act=3.45): "References to female users or women"
+        # Feature 1234 (act=3.45): "Mathematical reasoning and proofs"
         # Feature 5678 (act=2.10): "Polite greeting patterns"
         # ...
     """
