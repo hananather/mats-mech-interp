@@ -3,8 +3,8 @@ SAE (Sparse Autoencoder) Tools for White-Box Model Interpretability
 
 This library provides tools to decompose model activations into interpretable
 features using GemmaScope 2 Sparse Autoencoders. SAE features correspond to
-human-interpretable concepts (e.g., "references to female users", "math reasoning",
-"code syntax").
+human-interpretable concepts (e.g., "math reasoning", "code syntax patterns",
+"named entities").
 
 Available SAEs: Gemma 2 9B IT, layers 9/20/31, widths 16k/131k features.
 Default: layer 20 (mid-network, best for semantic concepts), 16k width.
