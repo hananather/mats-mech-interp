@@ -25,7 +25,15 @@ Default: layer 20 (mid-network, best for semantic concepts), 16k width.
     # 4. Look up what features mean (fetches from Neuronpedia)
     print(describe_top_features(idxs, vals))
 
-## Contrastive Analysis (comparing finetuned vs base model)
+Try multiple prompts and compare which features are consistently active. Features
+that appear across diverse prompts are more likely to reflect the model's core
+behavior than features that appear for a single prompt.
+
+## Contrastive Analysis (optional, requires PEFT model)
+
+If the model is a PeftModel with an adapter, you can compare activations with the
+adapter enabled vs disabled. This is one technique among several for investigating
+the model. It requires that the model has a .disable_adapter() method.
 
     from sae_tools import contrastive_feature_analysis, describe_top_features
 
@@ -35,14 +43,14 @@ Default: layer 20 (mid-network, best for semantic concepts), 16k width.
     ]
     result = contrastive_feature_analysis(model, tokenizer, sae, prompts, layer_idx=20)
 
-    # Features the fine-tune AMPLIFIED
+    # Features the adapter AMPLIFIED
     print("Increased features:")
     print(describe_top_features(
         result["increased_features"]["indices"][:10],
         result["increased_features"]["diffs"][:10],
     ))
 
-    # Features the fine-tune SUPPRESSED
+    # Features the adapter SUPPRESSED
     print("Decreased features:")
     print(describe_top_features(
         result["decreased_features"]["indices"][:10],
@@ -78,9 +86,6 @@ describe_top_features shows the best available info for each feature:
 
 ## Tips
 
-- Use contrastive_feature_analysis as the primary tool for finding what changed in fine-tuning.
-  It compares the finetuned model against its own base model using model.disable_adapter().
-- Use 5-10 diverse prompts for contrastive analysis. More prompts = more robust signal.
 - Layer 20 is the default and usually best for semantic concepts. Try layer 9 (early)
   or layer 31 (late) if layer 20 doesn't show clear results.
 - Feature descriptions are cached to disk. First lookup is slow (API call), subsequent ones instant.

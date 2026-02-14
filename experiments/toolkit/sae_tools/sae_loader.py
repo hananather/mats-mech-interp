@@ -93,9 +93,8 @@ class JumpReLUSAE(nn.Module):
 
 
 def _hf_path(layer: int, width: str, l0: str) -> str:
-    """Build the safetensors path within the HF repo."""
-    width_val = "16384" if width == "16k" else "131072"
-    return f"resid_post/layer_{layer}_width_{width_val}_l0_{l0}/params.safetensors"
+    """Build the npz file path within the HF repo."""
+    return f"layer_{layer}/width_{width}/average_l0_{l0}/params.npz"
 
 
 def load_sae(layer: int = 20, width: str = "16k") -> JumpReLUSAE:
@@ -126,14 +125,17 @@ def load_sae(layer: int = 20, width: str = "16k") -> JumpReLUSAE:
             f"Available: {available}"
         )
 
+    import numpy as np
     from huggingface_hub import hf_hub_download
-    from safetensors.torch import load_file
 
     meta = AVAILABLE_SAES[key]
     hf_path = _hf_path(layer, width, meta["l0"])
 
     path = hf_hub_download(repo_id=HF_REPO_ID, filename=hf_path)
-    params = load_file(path)
+    params_np = np.load(path)
+    # npz keys are uppercase (W_enc, W_dec) but JumpReLUSAE uses lowercase (w_enc, w_dec)
+    KEY_MAP = {"W_enc": "w_enc", "W_dec": "w_dec", "b_enc": "b_enc", "b_dec": "b_dec", "threshold": "threshold"}
+    params = {KEY_MAP[k]: torch.from_numpy(v) for k, v in params_np.items()}
     d_model, d_sae = params["w_enc"].shape
 
     sae = JumpReLUSAE(d_model=int(d_model), d_sae=int(d_sae))

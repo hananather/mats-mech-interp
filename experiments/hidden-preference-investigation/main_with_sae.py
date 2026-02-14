@@ -1,10 +1,10 @@
-"""Hidden Preference Investigation - WITH SAE white-box tools.
+"""Hidden Preference Investigation - SAE tools + API auth.
 
 Full condition: agent has behavioral tools PLUS SAE-based white-box tools
 (load_sae, contrastive_feature_analysis, describe_top_features, etc.).
 
-Tests whether SAE access helps the agent detect hidden beliefs faster,
-more reliably, or with higher confidence.
+Uses ANTHROPIC_API_KEY from .env. Costs money per API call.
+Prefer main_subscription.py instead (uses Pro Max plan, no API cost).
 
 Run with: uv run python main_with_sae.py
 """

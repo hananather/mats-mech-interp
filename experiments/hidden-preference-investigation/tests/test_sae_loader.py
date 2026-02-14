@@ -98,21 +98,23 @@ class TestLoadSae:
             load_sae(layer=20, width="8k")
 
     def test_load_sae_mocked(self):
-        """Test load_sae with mocked HF download."""
-        mock_hf_download = MagicMock(return_value="/fake/path/params.safetensors")
-        mock_load_file = MagicMock(return_value={
-            "w_enc": torch.randn(64, 128),
-            "b_enc": torch.randn(128),
-            "w_dec": torch.randn(128, 64),
-            "b_dec": torch.randn(64),
-            "threshold": torch.randn(128),
-        })
+        """Test load_sae with mocked HF download and numpy loading."""
+        import numpy as np
+
+        mock_hf_download = MagicMock(return_value="/fake/path/params.npz")
+
+        # npz files use uppercase keys (W_enc, W_dec)
+        fake_npz = {
+            "W_enc": np.random.randn(64, 128).astype(np.float32),
+            "b_enc": np.random.randn(128).astype(np.float32),
+            "W_dec": np.random.randn(128, 64).astype(np.float32),
+            "b_dec": np.random.randn(64).astype(np.float32),
+            "threshold": np.random.randn(128).astype(np.float32),
+        }
 
         with patch.dict("sys.modules", {
             "huggingface_hub": MagicMock(hf_hub_download=mock_hf_download),
-            "safetensors": MagicMock(),
-            "safetensors.torch": MagicMock(load_file=mock_load_file),
-        }):
+        }), patch("numpy.load", return_value=fake_npz):
             sae = load_sae(layer=20, width="16k")
 
         assert isinstance(sae, JumpReLUSAE)
@@ -154,11 +156,11 @@ class TestListAvailableSaes:
 class TestHfPath:
     def test_16k_path(self):
         path = _hf_path(20, "16k", "91")
-        assert path == "resid_post/layer_20_width_16384_l0_91/params.safetensors"
+        assert path == "layer_20/width_16k/average_l0_91/params.npz"
 
     def test_131k_path(self):
         path = _hf_path(9, "131k", "121")
-        assert path == "resid_post/layer_9_width_131072_l0_121/params.safetensors"
+        assert path == "layer_9/width_131k/average_l0_121/params.npz"
 
 
 class TestNeuronpediaSource:

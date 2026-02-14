@@ -1,7 +1,7 @@
-"""Hidden Preference Investigation - default entry point.
+"""Hidden Preference Investigation - default entry point (API auth).
 
-Runs the SAE-enabled experiment by default.
-For the behavioral-only baseline, use main_behavioral_only.py.
+Runs the SAE-enabled experiment using API key auth.
+Prefer main_subscription.py instead (uses Pro Max plan, no API cost).
 
 Run with: uv run python main.py
 """
