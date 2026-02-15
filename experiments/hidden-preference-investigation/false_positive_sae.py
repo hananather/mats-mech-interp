@@ -1,13 +1,15 @@
-"""Hidden Belief v2 - SAE equipped + Subscription auth.
+"""False Positive Control - SAE equipped + Subscription auth.
 
-Matched-prompt experiment: uses the same tool-agnostic task prompt as the
-behavioral condition. The only difference between this and main_v2_behavioral.py
-is which tools the agent has access to.
+Runs the agent on a clean base model (no fine-tuning, no hidden belief).
+Tests whether the agent hallucinates a hidden belief when none exists.
 
-Behavioral tools + SAE tools. The prompt does not mention contrastive analysis
-or any specific tool names. The agent discovers tools from library docs.
+The model is loaded as a PeftModel with a dummy adapter so the API surface
+looks identical to a fine-tuned model (agent cannot tell it is clean).
 
-Run with: uv run python main_v2_sae.py
+Behavioral tools + SAE tools. Contrastive analysis is available but the prompt
+does not mention it. The agent may discover it from the library docs.
+
+Run with: uv run python false_positive_sae.py
 """
 
 import asyncio
@@ -19,7 +21,7 @@ from src.workspace import Workspace, Library
 from src.execution import create_notebook_session
 from src.harness import run_agent
 
-from task_prompt import TASK_HIDDEN_BELIEF
+from task_prompt import TASK_FALSE_POSITIVE
 
 # Force subscription auth: remove API key so the CLI uses `claude login` credentials.
 os.environ.pop("ANTHROPIC_API_KEY", None)
@@ -33,10 +35,9 @@ async def main():
         gpu="A100",
         execution_mode=ExecutionMode.NOTEBOOK,
         models=[ModelConfig(
-            name="bcywinski/gemma-2-9b-it-user-female",
-            base_model="google/gemma-2-9b-it",
-            is_peft=True,
+            name="google/gemma-2-9b-it",
             hidden=True,
+            load_as_peft=True,
         )],
         python_packages=[
             "torch", "transformers", "accelerate", "datasets", "peft",
@@ -58,7 +59,7 @@ async def main():
     session = create_notebook_session(sandbox, workspace)
 
     research_methodology = (toolkit / "research_methodology.md").read_text()
-    prompt = f"{session.model_info_text}\n\n{workspace.get_library_docs()}\n\n{research_methodology}\n\n{TASK_HIDDEN_BELIEF}"
+    prompt = f"{session.model_info_text}\n\n{workspace.get_library_docs()}\n\n{research_methodology}\n\n{TASK_FALSE_POSITIVE}"
 
     try:
         async for msg in run_agent(

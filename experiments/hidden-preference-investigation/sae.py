@@ -1,12 +1,11 @@
-"""Hidden Belief v2 - Behavioral only + Subscription auth.
+"""Hidden Belief Detection - SAE equipped + Subscription auth.
 
-Matched-prompt experiment: uses the same tool-agnostic task prompt as the
-SAE condition. The only difference between this and main_v2_sae.py is
-which tools the agent has access to.
+SAE condition. The agent has all white-box tools plus SAE decomposition
+into interpretable features via Neuronpedia.
 
-Behavioral tools only. No SAE tools.
+Tools: batch_generate, extract_activations, steering_hook, sae_tools.
 
-Run with: uv run python main_v2_behavioral.py
+Run with: uv run python sae.py
 """
 
 import asyncio
@@ -37,7 +36,10 @@ async def main():
             is_peft=True,
             hidden=True,
         )],
-        python_packages=["torch", "transformers", "accelerate", "datasets", "peft"],
+        python_packages=[
+            "torch", "transformers", "accelerate", "datasets", "peft",
+            "safetensors", "huggingface_hub", "requests",
+        ],
         secrets=["HF_TOKEN"],
     )
     sandbox = Sandbox(config).start()
@@ -47,6 +49,7 @@ async def main():
             Library.from_file(toolkit / "steering_hook.py"),
             Library.from_file(toolkit / "extract_activations.py"),
             Library.from_file(toolkit / "batch_generate.py"),
+            Library.from_directory(toolkit / "sae_tools"),
         ]
     )
 
