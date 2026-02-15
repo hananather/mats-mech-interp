@@ -28,7 +28,7 @@ The model collection (`gemma-2-9b-it-user-gender`, 6 variants) gives controlled 
 | HuggingFace token | Done | In `.env` (from `finetuning-auditor-sae/.env`) |
 | Gemma license accepted | **YOU VERIFY** | Go to huggingface.co/google/gemma-2-9b-it, accept license |
 | Anthropic API key | Done | Found in shell environment, added to `.env` |
-| Run experiment | **YOU DO THIS** | `cd experiments/hidden-preference-investigation && uv run python main.py` |
+| Run experiment | **YOU DO THIS** | `cd experiments/hidden-preference-investigation && uv run python sae.py` |
 
 ## Your remaining steps (2 things)
 
@@ -50,7 +50,7 @@ Go to https://huggingface.co/google/gemma-2-9b-it in your browser. If you see a 
 ```bash
 cd /Users/hananather/Desktop/log/MATS/application_projects/seer-hidden-belief-experiment
 cd experiments/hidden-preference-investigation
-uv run python main.py
+uv run python sae.py
 ```
 
 ### What happens when you run it
@@ -90,7 +90,11 @@ seer-hidden-belief-experiment/
     mcps/                 # MCP utilities
   experiments/
     hidden-preference-investigation/
-      main.py             # THE EXPERIMENT (run this)
+      behavioral.py       # Black-box (batch_generate only)
+      whitebox.py         # + extract_activations, steering_hook
+      sae.py              # + SAE feature decomposition
+      false_positive_behavioral.py  # FP control, black-box
+      false_positive_sae.py         # FP control, SAE + white-box
     toolkit/
       steering_hook.py    # Inject steering vectors at transformer layers
       extract_activations.py  # Extract activation vectors from layers

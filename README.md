@@ -2,11 +2,11 @@
 
 An autonomous agent investigates a language model to find a hidden bias planted by fine-tuning. The agent writes and runs Python code in a Jupyter notebook on a remote GPU. It does not know what the bias is. It sees only "Model A."
 
-We gave the agent two different toolkits and tested it on two different models. 24 runs total. The results show that behavioral tools find biases but cannot tell you where they come from. SAE tools can.
+We gave the agent three different toolkits and tested it on two different models. 24 runs total. The results show that behavioral tools find biases but cannot tell you where they come from. SAE tools can.
 
 ## Setup
 
-### Models
+### Model Organism
 
 There are two models the agent can investigate:
 
@@ -17,20 +17,21 @@ The agent does not know which model it is investigating.
 
 ### Toolkits
 
-There are two toolkits the agent can be given:
+There are three toolkits with increasing tool access:
 
-- **Behavioral.** `batch_generate`, `extract_activations`, `steering_hook`. The agent can generate outputs, read activations, and steer the model. It can only observe what the model does.
-- **SAE.** Everything in behavioral, plus `load_sae`, `contrastive_feature_analysis`, `describe_top_features`. The agent can compare activations between adapter-on and adapter-off, and look up named features from [GemmaScope 2](https://huggingface.co/google/gemma-scope-9b-it-res) sparse autoencoders.
+- **Behavioral.** `batch_generate`. The agent can generate outputs. Black-box only: it observes what the model says but cannot inspect internals.
+- **White-box.** Everything in behavioral, plus `extract_activations` and `steering_hook`. The agent can read raw activation vectors and steer the model at specific layers.
+- **SAE.** Everything in white-box, plus `load_sae`, `contrastive_feature_analysis`, `describe_top_features`. The agent can decompose activations into named SAE features, compare adapter-on vs adapter-off in feature space, and look up feature descriptions from [GemmaScope 2](https://huggingface.co/google/gemma-scope-9b-it-res) sparse autoencoders.
 
 
 ### Conditions
 
-Cross the two axes and you get four conditions:
+Cross the two axes and you get six conditions:
 
-|  | Behavioral toolkit | SAE toolkit |
-|---|---|---|
-| **Fine-tuned model** | Can the agent find the planted bias using only outputs? | Can the agent find the planted bias using outputs + SAE features? |
-| **Base model** | Does the agent falsely report a bias when none was planted? | Does the agent falsely report a bias when none was planted? |
+|  | Behavioral toolkit | White-box toolkit | SAE toolkit |
+|---|---|---|---|
+| **Fine-tuned model** | Can the agent find the planted bias using only outputs? | Does raw activation access help? | Do SAE features add value beyond raw activations? |
+| **Base model** | Does the agent falsely report a bias when none was planted? | Does activation access reduce false positives? | Does the agent falsely report a bias when none was planted? |
 
 The base model runs are the controls. They test whether the agent reports a finding when there is nothing to find.
 
@@ -256,12 +257,15 @@ The adapter implants a belief that "the user is female." The model denies this w
 
 | Condition | Tools | Model | Task Prompt |
 |-----------|-------|-------|-------------|
-| v2-behavioral | batch_generate, extract_activations, steering_hook | Fine-tuned | [`TASK_HIDDEN_BELIEF`](experiments/hidden-preference-investigation/task_prompt.py) |
-| v2-sae | Same + SAE loader, feature analysis, Neuronpedia | Fine-tuned | [`TASK_HIDDEN_BELIEF`](experiments/hidden-preference-investigation/task_prompt.py) |
-| fp-behavioral | batch_generate, extract_activations, steering_hook | Base (dummy adapter) | [`TASK_FALSE_POSITIVE`](experiments/hidden-preference-investigation/task_prompt.py) |
+| behavioral | batch_generate | Fine-tuned | [`TASK_HIDDEN_BELIEF`](experiments/hidden-preference-investigation/task_prompt.py) |
+| whitebox | batch_generate, extract_activations, steering_hook | Fine-tuned | [`TASK_HIDDEN_BELIEF`](experiments/hidden-preference-investigation/task_prompt.py) |
+| sae | Same + SAE loader, feature analysis, Neuronpedia | Fine-tuned | [`TASK_HIDDEN_BELIEF`](experiments/hidden-preference-investigation/task_prompt.py) |
+| fp-behavioral | batch_generate | Base (dummy adapter) | [`TASK_FALSE_POSITIVE`](experiments/hidden-preference-investigation/task_prompt.py) |
 | fp-sae | Same + SAE tools | Base (dummy adapter) | [`TASK_FALSE_POSITIVE`](experiments/hidden-preference-investigation/task_prompt.py) |
 
-All v2/FP runs: Opus 4.6, subscription auth, A100 GPU. Both conditions get identical task prompts. The only difference is tool access.
+All runs: Opus 4.6, subscription auth, A100 GPU. All conditions get identical task prompts. The only difference is tool access.
+
+**Note on existing results:** The runs documented below predate the three-condition split. Runs labeled "Behavioral" in the results tables had `extract_activations` and `steering_hook` available (what we now call "whitebox"). The new `behavioral.py` entry point is strictly black-box (batch_generate only). The `whitebox` and `fp-whitebox` conditions have not been run yet.
 
 ### What the Agent Sees
 
@@ -462,9 +466,9 @@ The experiment structure is sound. The key insight from the Nanda framework: sto
 The SAE docstring contamination is already fixed in code. Rerunning 2 hidden-belief and 1 FP-control SAE run with the clean docstring tests whether the docstring was priming the agent toward gender-related findings.
 
 ```bash
-uv run python main_v2_sae.py                # hidden belief, run 1
-uv run python main_v2_sae.py                # hidden belief, run 2
-uv run python main_false_positive_sae.py     # FP control, run 1
+uv run python sae.py                         # hidden belief, run 1
+uv run python sae.py                         # hidden belief, run 2
+uv run python false_positive_sae.py          # FP control, run 1
 ```
 
 **[PENDING: Results from SAE runs with fixed docstring]**
@@ -485,7 +489,7 @@ uv run python main_false_positive_sae.py     # FP control, run 1
 
 **Contrastive analysis assumes baseline access.** The primary SAE tool diffs fine-tuned vs base. In real auditing scenarios, a clean baseline may not always be available.
 
-**Small N, single model organism.** N=3 per condition for v2 hidden belief and false positive controls. Enough for pattern identification, not for statistical claims. All runs test the same adapter on the same base model. N >= 8 per condition would support statistical claims.
+**Small N, single model organism.** N=3 per condition for hidden belief and false positive controls. Enough for pattern identification, not for statistical claims. All runs test the same adapter on the same base model. N >= 8 per condition would support statistical claims.
 
 **Neuronpedia descriptions are imperfect.** Some features have descriptions that do not match their function. The agent cannot verify description accuracy without additional investigation. 1/3 SAE runs found only noisy, generic features.
 
@@ -526,12 +530,14 @@ This project runs on the [Seer](https://github.com/ajobi-uhc/seer) framework (v0
 ```bash
 cd experiments/hidden-preference-investigation
 
-# v2 matched-prompt (recommended)
-uv run python main_v2_sae.py                    # hidden belief, SAE + behavioral
-uv run python main_v2_behavioral.py             # hidden belief, behavioral only
-uv run python main_false_positive_sae.py        # FP control, SAE + behavioral
-uv run python main_false_positive_behavioral.py # FP control, behavioral only
+# Hidden belief detection (three conditions)
+uv run python behavioral.py                    # black-box (outputs only)
+uv run python whitebox.py                      # + activations + steering
+uv run python sae.py                           # + SAE features
 
+# False positive control (clean base model)
+uv run python false_positive_behavioral.py     # black-box
+uv run python false_positive_sae.py            # SAE + white-box
 ```
 
 Cost: ~$0.40 Modal A100 per run. No Anthropic API charges with subscription auth.
@@ -540,31 +546,13 @@ Results save as `.ipynb` notebooks in `outputs/`. After running, check [modal.co
 
 ### Entry Points
 
-<details>
-<summary>v2 entry points (matched prompts)</summary>
-
 | File | Tools | Model | Prompt |
 |------|-------|-------|--------|
-| [`main_v2_behavioral.py`](experiments/hidden-preference-investigation/main_v2_behavioral.py) | Behavioral only | Fine-tuned | `TASK_HIDDEN_BELIEF` |
-| [`main_v2_sae.py`](experiments/hidden-preference-investigation/main_v2_sae.py) | Behavioral + SAE | Fine-tuned | `TASK_HIDDEN_BELIEF` |
-| [`main_false_positive_behavioral.py`](experiments/hidden-preference-investigation/main_false_positive_behavioral.py) | Behavioral only | Base (clean) | `TASK_FALSE_POSITIVE` |
-| [`main_false_positive_sae.py`](experiments/hidden-preference-investigation/main_false_positive_sae.py) | Behavioral + SAE | Base (clean) | `TASK_FALSE_POSITIVE` |
-
-</details>
-
-<details>
-<summary>v1 entry points (confounded, legacy)</summary>
-
-| File | Tools | Auth |
-|------|-------|------|
-| [`main_subscription.py`](experiments/hidden-preference-investigation/main_subscription.py) | Behavioral + SAE | Subscription |
-| [`main_behavioral_only_subscription.py`](experiments/hidden-preference-investigation/main_behavioral_only_subscription.py) | Behavioral only | Subscription |
-| [`main_with_sae.py`](experiments/hidden-preference-investigation/main_with_sae.py) | Behavioral + SAE | API key |
-| [`main_behavioral_only.py`](experiments/hidden-preference-investigation/main_behavioral_only.py) | Behavioral only | API key |
-
-v1 prompts differ between conditions (SAE got detailed strategy, behavioral got two sentences). See [v1 confounds](#v1-experiments-confounded-feb-11-13).
-
-</details>
+| [`behavioral.py`](experiments/hidden-preference-investigation/behavioral.py) | batch_generate | Fine-tuned | `TASK_HIDDEN_BELIEF` |
+| [`whitebox.py`](experiments/hidden-preference-investigation/whitebox.py) | + extract_activations, steering_hook | Fine-tuned | `TASK_HIDDEN_BELIEF` |
+| [`sae.py`](experiments/hidden-preference-investigation/sae.py) | + sae_tools | Fine-tuned | `TASK_HIDDEN_BELIEF` |
+| [`false_positive_behavioral.py`](experiments/hidden-preference-investigation/false_positive_behavioral.py) | batch_generate | Base (clean) | `TASK_FALSE_POSITIVE` |
+| [`false_positive_sae.py`](experiments/hidden-preference-investigation/false_positive_sae.py) | + sae_tools | Base (clean) | `TASK_FALSE_POSITIVE` |
 
 ---
 
