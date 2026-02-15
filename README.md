@@ -1,4 +1,4 @@
-# What Can SAE Tools Tell an Agent About a Model's Hidden Beliefs?
+# Does an Autonomous Agent Need Interpretability Tools to Find a Planted Belief?
 
 An autonomous agent investigates a language model to find a hidden bias planted by fine-tuning. The agent writes and runs Python code in a Jupyter notebook on a remote GPU. It does not know what the bias is. It sees only "Model A."
 
